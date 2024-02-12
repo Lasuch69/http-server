@@ -10,36 +10,47 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main(int argc, char *argv[]) {
+int create_listener(struct sockaddr_in addr) {
 	int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (s == -1) {
 		perror("Failed to create socket!");
-		return EXIT_FAILURE;
+		return -1;
 	}
 
-	struct sockaddr_in s_addr = {
-		AF_INET,
-		htons(6969),
-		htonl(INADDR_ANY)
-	};
-
-	if (bind(s, (struct sockaddr *)&s_addr, sizeof(s_addr)) == -1) {
+	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		perror("Bind failed!");
 		close(s);
-		return EXIT_FAILURE;
+		return -1;
 	}
 
 	if (listen(s, 10) == -1) {
 		perror("Listen failed!");
 		close(s);
+		return -1;
+	}
+
+	return s;
+}
+
+int main(int argc, char *argv[]) {
+	struct sockaddr_in addr = {
+		AF_INET,
+		htons(6969),
+		htonl(INADDR_ANY)
+	};
+
+	int socket = create_listener(addr);
+
+	if (socket == -1) {
+		perror("Failed to create listener!");
 		return EXIT_FAILURE;
 	}
 
 	printf("Listening...\n");
 
 	while (true) {
-		int c = accept(s, NULL, NULL);
+		int c = accept(socket, NULL, NULL);
 
 		if (c == -1) {
 			perror("Accept failed!");
@@ -58,6 +69,6 @@ int main(int argc, char *argv[]) {
 		close(c);
 	}
 
-	close(s);
+	close(socket);
 	return EXIT_SUCCESS;
 }
