@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -9,6 +10,19 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+int get_port_from_string(char *port_str) {
+	int c_idx = 0;
+	while (port_str[c_idx] != '\0') {
+		if (!isdigit(port_str[c_idx])) {
+			return -1;
+		}
+
+		c_idx++;
+	}
+
+	return atoi(port_str);
+}
 
 int create_listener(struct sockaddr_in addr) {
 	int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -34,9 +48,27 @@ int create_listener(struct sockaddr_in addr) {
 }
 
 int main(int argc, char *argv[]) {
+	int port = 6969;
+
+	for (int i = 1; i < argc; i++) {
+		if (strcmp("--port", argv[i]) == 0) {
+			if (i + 1 >= argc)
+				break;
+
+			char *port_str = argv[i + 1];
+
+			port = get_port_from_string(port_str);
+
+			if (port == -1) {
+				printf("Invalid port!\n");
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
 	struct sockaddr_in addr = {
 		AF_INET,
-		htons(6969),
+		htons(port),
 		htonl(INADDR_ANY)
 	};
 
@@ -47,7 +79,7 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	printf("Listening...\n");
+	printf("Listening on http://localhost:%d/\n", port);
 
 	while (true) {
 		int c = accept(socket, NULL, NULL);
